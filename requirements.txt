@@ -1,3 +1,11 @@
 numpy
 pandas
+spacy
+scikit-learn
+matplotlib
+scipy
+requests
+pillow
+tqdm
+tensorflow
 -e .
