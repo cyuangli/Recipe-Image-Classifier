@@ -8,4 +8,6 @@ requests
 pillow
 tqdm
 tensorflow
+PyYAML
+faiss-cpu
 -e .
