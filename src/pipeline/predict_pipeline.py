@@ -1,6 +1,7 @@
 import sys
 import tensorflow as tf
 import numpy as np
+from pathlib import Path
 from PIL import Image
 from src.logger import logging
 from src.exception import CustomException
