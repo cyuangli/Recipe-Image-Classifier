@@ -11,6 +11,5 @@ tensorflow
 PyYAML
 faiss-cpu
 streamlit
-Pillow
-huggingface_hub
+huggingface-hub
 -e .

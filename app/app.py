@@ -5,7 +5,6 @@ import os
 import tempfile
 import numpy as np
 import pandas as pd
-import hashlib
 
 from tensorflow.keras.preprocessing.image import load_img, img_to_array
 from huggingface_hub import hf_hub_download
@@ -96,23 +95,48 @@ def get_recipe_data(lemmatized_name: str):
 
 
 @st.cache_data
-def get_image_local(image_path: str):
-    if os.path.exists(image_path):
-        return image_path
-    alt = os.path.join("notebooks", image_path)
-    if os.path.exists(alt):
-        return alt
-    return None
+def get_image_from_hf(image_path: str):
+    """Download image from Hugging Face WebEats-v3 dataset"""
+    try:
+        # The image_path might be like "data/images/acorn_squash_ice_cream_45219.jpg"
+        # or just "acorn_squash_ice_cream_45219.jpg"
+        # We need to download it from the WebEats-v3 repo
+        
+        local_path = hf_hub_download(
+            repo_id=DATASET_REPO,
+            filename=image_path,
+            repo_type="dataset",
+        )
+        return local_path
+    except Exception as e:
+        # Try without "data/" prefix if it has one
+        try:
+            if image_path.startswith("data/"):
+                alt_path = image_path[5:]  # Remove "data/"
+            else:
+                alt_path = f"data/{image_path}"
+            
+            local_path = hf_hub_download(
+                repo_id=DATASET_REPO,
+                filename=alt_path,
+                repo_type="dataset",
+            )
+            return local_path
+        except:
+            return None
+
 
 # ============================================================
-# MODEL LOADING (INTENTIONALLY NOT CACHED)
+# MODEL LOADING - CACHED!
 # ============================================================
+@st.cache_resource
 def load_models():
+    """Load all models - this should only run once"""
+    
     embedding_model_path = hf_hub_download(
         repo_id=EMBEDDING_MODEL_REPO,
         filename="embedding_model.keras",
         repo_type="model",
-        force_download=True,
     )
 
     pca_path = hf_hub_download(
@@ -141,6 +165,7 @@ def load_models():
     return embedding_model, pca, index, image_paths
 
 
+# Load models once at startup
 embedding_model, pca, index, image_paths = load_models()
 
 # ============================================================
@@ -188,8 +213,17 @@ if uploaded_file:
         image.save(tmp.name)
         query_path = tmp.name
 
-    results, distances = search_similar_recipes(query_path, k=25)
+    with st.spinner("Finding similar recipes..."):
+        results, distances = search_similar_recipes(query_path, k=25)
+    
     os.unlink(query_path)
+
+    # Preload all images before displaying
+    with st.spinner("Loading images..."):
+        image_paths_loaded = []
+        for path in results:
+            img_path = get_image_from_hf(path)
+            image_paths_loaded.append(img_path)
 
     st.subheader("🔍 Similar Recipes")
 
@@ -201,19 +235,23 @@ if uploaded_file:
     with grid_col:
         st.markdown('<div class="image-grid">', unsafe_allow_html=True)
         cols = st.columns(5)
-        for i, path in enumerate(results):
-            img_path = get_image_local(path)
-            if not img_path:
-                continue
-
+        for i, (path, img_path) in enumerate(zip(results, image_paths_loaded)):
+            
             with cols[i % 5]:
-                st.image(img_path, use_container_width=True)
-                if st.button("View Recipe", key=f"view_{i}"):
-                    st.session_state.selected_recipe = path
+                if img_path:
+                    st.image(img_path, use_container_width=True)
+                    if st.button("View Recipe", key=f"view_{i}"):
+                        st.session_state.selected_recipe = path
+                else:
+                    # Show placeholder if image not found
+                    st.write(f"Image {i+1}")
+                    if st.button("View Recipe", key=f"view_{i}"):
+                        st.session_state.selected_recipe = path
+                        
         st.markdown("</div>", unsafe_allow_html=True)
 
     # ========================================================
-    # RECIPE SIDE PANEL (NO DIMMING)
+    # RECIPE SIDE PANEL
     # ========================================================
     with detail_col:
         if st.session_state.selected_recipe:
@@ -224,10 +262,10 @@ if uploaded_file:
 
             if data:
                 st.markdown("### 🍽 Recipe Details")
-                st.image(
-                    get_image_local(recipe_path),
-                    use_container_width=True,
-                )
+                
+                img_path = get_image_from_hf(recipe_path)
+                if img_path:
+                    st.image(img_path, use_container_width=True)
 
                 st.markdown(f"**{data['original_name']}**")
                 st.markdown("---")
