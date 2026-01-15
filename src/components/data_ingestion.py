@@ -28,7 +28,7 @@ class DataIngestion:
             for file_rel in files:
                 url = hf_hub_url(repo_id=repo_id, filename=file_rel)
                 dest_path = os.path.join(target_dir, Path(file_rel).name)
-                # Download file
+
                 hf_hub_download(repo_id=repo_id, filename=file_rel, local_dir=target_dir, force_download=True)
             
             logging.info(f"Finished data ingestion.")

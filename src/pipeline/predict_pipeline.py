@@ -8,7 +8,7 @@ from src.logger import logging
 from src.exception import CustomException
 from src.components.data_ingestion import DataIngestion
 from src.components.data_transformation import DataTransformation
-from src.utils import load_keras  # optional utility if you use custom wrapper
+from src.utils import load_keras  
 
 class PredictionPipeline():
     def __init__(self, model_path, preprocessor_path):

@@ -1,4 +1,4 @@
-# uploader_selective.py
+
 import time
 from pathlib import Path
 from huggingface_hub import HfApi
@@ -7,30 +7,20 @@ import tempfile
 import shutil
 from datetime import datetime
 
-# ---------------- CONFIG ----------------
+
 REPO_ID = "cyuangli/WebEats-v3"
 LOCAL_ROOT = Path("notebooks/data/images")
-BATCH_SIZE = 500  # files per batch folder upload
-SLEEP_SECONDS = 5  # reduced - HF handles rate limiting
+BATCH_SIZE = 500  
+SLEEP_SECONDS = 5  
 CHECKPOINT_FILE = Path("uploaded_files.txt")
 MAX_RETRIES = 3
 
-# ============================================
-# MANUAL SELECTION: Specify which meta_topics to upload
-# ============================================
-# Option 1: Upload specific meta_topics (uncomment and modify)
-SELECTED_META_TOPICS = [81, 82, 83, 84, 85, 86, 87, 88, 89, 90]  # e.g., upload meta_topic_1, meta_topic_2, etc.
+SELECTED_META_TOPICS = [81, 82, 83, 84, 85, 86, 87, 88, 89, 90]
 
-# Option 2: Upload a range (uncomment to use instead)
-# SELECTED_META_TOPICS = list(range(1, 11))  # uploads meta_topic_1 through meta_topic_10
-
-# Option 3: Upload all (uncomment to use instead)
-# SELECTED_META_TOPICS = None  # uploads all meta_topics
-# ============================================
 
 api = HfApi()
 
-# Track commits in this session
+
 commits_made = 0
 
 def load_checkpoint():
@@ -76,12 +66,10 @@ def upload_batch_via_folder(batch, meta_topic_name, base_path):
         temp_path = Path(temp_dir) / "images" / meta_topic_name
         temp_path.mkdir(parents=True, exist_ok=True)
         
-        # Copy batch files to temp structure
         for file_path in batch:
             dest = temp_path / file_path.name
             shutil.copy2(file_path, dest)
         
-        # Upload entire temp folder
         api.upload_folder(
             folder_path=str(Path(temp_dir) / "images"),
             path_in_repo="images",
@@ -89,7 +77,6 @@ def upload_batch_via_folder(batch, meta_topic_name, base_path):
             repo_type="dataset"
         )
         
-        # Increment commit counter
         commits_made += 1
         
         # Save checkpoint
@@ -131,10 +118,8 @@ def upload_meta_topic(meta_topic_folder, uploaded_set, base_path):
         if not success:
             failed_batches.append(i)
         else:
-            # Print commit count after successful upload
             print(f"    📊 Total commits made: {commits_made}")
         
-        # Sleep between batches (except after last batch)
         if i < len(batches):
             time.sleep(SLEEP_SECONDS)
     
@@ -147,11 +132,9 @@ def get_selected_meta_topics():
     """Get list of meta_topic folders based on SELECTED_META_TOPICS."""
     all_meta_topics = sorted([d for d in LOCAL_ROOT.iterdir() if d.is_dir()])
     
-    # If no selection, return all
     if SELECTED_META_TOPICS is None:
         return all_meta_topics
     
-    # Filter based on selected numbers
     selected_folders = []
     for num in SELECTED_META_TOPICS:
         folder_name = f"meta_topic_{num}"
@@ -171,11 +154,9 @@ def main():
     print(f"⚙️  Batch size: {BATCH_SIZE} files")
     print(f"⏱️  Sleep between batches: {SLEEP_SECONDS}s\n")
     
-    # Load checkpoint
     uploaded_set = load_checkpoint()
     print(f"📋 Checkpoint loaded: {len(uploaded_set)} files already uploaded\n")
     
-    # Get selected meta_topic folders
     meta_topics = get_selected_meta_topics()
     
     if SELECTED_META_TOPICS is None:
@@ -189,7 +170,6 @@ def main():
         print("❌ No meta_topic folders to upload. Check your SELECTED_META_TOPICS configuration.")
         return
     
-    # Upload each meta_topic
     start_time = datetime.now()
     for meta_topic_folder in meta_topics:
         upload_meta_topic(meta_topic_folder, uploaded_set, LOCAL_ROOT)
@@ -201,7 +181,6 @@ def main():
     print(f"⏱️  Total time: {elapsed}")
     print(f"="*60)
     
-    # Warning if approaching limit
     if commits_made >= 80:
         print(f"\n⚠️  WARNING: You've made {commits_made} commits.")
         print(f"    HuggingFace typically has a limit around 100 commits per hour.")

@@ -10,7 +10,7 @@ import time
 import random
 import math
 
-# --- CONFIG ---
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATAFRAME_PATH = os.path.normpath(
     os.path.join(BASE_DIR, "..", "notebooks", "data", "recipe_meta_topics.csv")
@@ -24,17 +24,15 @@ IMAGE_SIZE = (224, 224)
 JPEG_QUALITY = 85
 MAX_RETRIES = 3
 
-START_INDEX = 25502   # ⬅️ CHANGE THIS if you want to resume elsewhere
-# -----------------
+START_INDEX = 0
 
-# Common desktop User-Agents to rotate
 USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36",
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 13_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15",
     "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:117.0) Gecko/20100101 Firefox/117.0",
 ]
 
-# --- Utilities ---
+
 
 def sanitize_filename(name, fallback):
     if not isinstance(name, str) or not name.strip():
@@ -66,13 +64,13 @@ def download_image(url, save_path):
         time.sleep(random.uniform(0.5, 2.0))
     return False
 
-# --- Load data ---
+
 df = pd.read_csv(DATAFRAME_PATH)
 os.makedirs(IMAGES_DIR, exist_ok=True)
 
 total_recipes = len(df)
 
-# --- Main loop ---
+
 for idx, row in tqdm(df.iterrows(), total=total_recipes):
     if idx < START_INDEX:
         continue
